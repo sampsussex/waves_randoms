@@ -446,7 +446,7 @@ class waveswiderandoms:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate WAVES randoms and apply regionx masks.")
-    parser.add_argument("--region", default="waves-wide_n", choices=["waves-wide_n", "waves-wide_s", "waves-deep", "all"])
+    parser.add_argument("--region", default="waves-wide_n", choices=["waves-wide_n", "waves-wide_s", "waves-deep"])
     parser.add_argument("--nrandoms", type=int, default=1_000_000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--chunk-size", type=int, default=1_000_000)
@@ -479,10 +479,8 @@ def main():
     )
 
     # Decide which regions to run
-    if args.region == "all":
-        regions = list(gen.regions.keys())
-    else:
-        regions = [args.region]
+
+    regions = [args.region]
 
 
     if not args.no_masks:

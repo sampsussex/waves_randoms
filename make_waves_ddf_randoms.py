@@ -473,7 +473,7 @@ class WDHexRandoms:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate WD hex-region randoms and apply aperture masks (optional polygons).")
-    parser.add_argument("--region", default="WD01", choices=["WD01", "WD02", "WD03", "WD10", "all"])
+    parser.add_argument("--region", default="WD01", choices=["WD01", "WD02", "WD03", "WD10"])
     parser.add_argument("--nrandoms", type=int, default=1_000_000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--chunk-size", type=int, default=1_000_000)
@@ -509,7 +509,7 @@ def main():
     )
 
     # Decide which regions to run
-    regions = list(gen.regions.keys()) if args.region == "all" else [args.region]
+    regions = [args.region]
 
     if not args.no_masks:
         gen.load_masks()
