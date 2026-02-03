@@ -172,6 +172,11 @@ class AreaFinder:
         """
         if self.total_count is None or self.total_count == 0:
             raise RuntimeError("Counts not initialized. Run find_area_fractions_realisationwise() first.")
+        print("total count ", self.total_count)
+        print("starmask count ", self.starmask_count)
+        print("starghost count ", self.starmask_ghostmask_count)
+        print("starmask polygon count ", self.starmask_polygonmask_count)
+        print("star-poly-ghost count ", self.starmask_ghostmask_polygonmask_count)
 
         fractions = {
             "starmask": self.starmask_count / self.total_count,
@@ -188,7 +193,7 @@ class AreaFinder:
         }
 
         errors = {
-            key: (self.total_count / (count ** 1.5)) if count > 0 else np.nan
+            key: (count ** 0.5 / self.total_count) if count > 0 else np.nan
             for key, count in masked_counts.items()
         }
 
