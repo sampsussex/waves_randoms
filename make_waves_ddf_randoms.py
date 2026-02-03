@@ -558,7 +558,7 @@ def main():
         sm = gen.region_randoms[region]["starmask"]
         gm = gen.region_randoms[region]["ghostmask"]
         pm = gen.region_randoms[region]["polygon_mask"]
-        print(f"[{region}] masked fractions: star={sm.mean():.4f}, ghost={gm.mean():.4f}, poly={pm.mean():.4f}")
+        print(f"[{region}] masked fractions: star={sm.mean():.8f}, ghost={gm.mean():.8f}, poly={pm.mean():.8f}")
 
     print("Done.")
 

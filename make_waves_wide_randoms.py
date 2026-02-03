@@ -392,7 +392,7 @@ class waveswiderandoms:
             if out.all():
                 break
 
-        if region == "waves-wide_s":
+        if region == "waves-wide_s" or region == "waves-deep":
             # Also apply extra WAVES-S masks
             extra_mask = self._apply_aperture_catalog_kdtree(
                 ra=ra, dec=dec, catalog=self.waves_s_extra_catalog, label="waves-s-extra"
@@ -529,7 +529,7 @@ def main():
         gm = gen.region_randoms[region]["ghostmask"]
         pm = gen.region_randoms[region]["polygon_mask"]
         if sm is not None:
-            print(f"[{region}] masked fractions: star={sm.mean():.4f}, ghost={gm.mean():.4f}, poly={pm.mean():.4f}")
+            print(f"[{region}] masked fractions: star={sm.mean():.8f}, ghost={gm.mean():.8f}, poly={pm.mean():.8f}")
 
     print("Done.")
 
