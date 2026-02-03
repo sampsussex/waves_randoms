@@ -2,7 +2,7 @@
 import os
 import argparse
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from regionx import Polygon as regionx_polygon  # avoid name clash
@@ -67,6 +67,19 @@ def radec_to_unitvec(ra_deg: np.ndarray, dec_deg: np.ndarray) -> np.ndarray:
     y = cosd * np.sin(ra)
     z = np.sin(dec)
     return np.column_stack((x, y, z)).astype(np.float64, copy=False)
+
+
+def polygon_ball_radius_chord(ra_vertices: List[float], dec_vertices: List[float]) -> Tuple[np.ndarray, float]:
+    """
+    Return the unit-vector for the first vertex and the maximum chord distance
+    from that vertex to all other vertices.
+    """
+    ra_arr = np.asarray(ra_vertices, dtype=np.float64)
+    dec_arr = np.asarray(dec_vertices, dtype=np.float64)
+    vertices_xyz = radec_to_unitvec(ra_arr, dec_arr)
+    first_xyz = vertices_xyz[0]
+    max_radius = np.linalg.norm(vertices_xyz - first_xyz, axis=1).max()
+    return first_xyz, float(max_radius)
 
 
 @dataclass
@@ -396,20 +409,27 @@ class WDHexRandoms:
             self.region_randoms[region]["polygon_mask"] = out
             return
 
-        for start in range(0, n, self.chunk_size):
-            end = min(start + self.chunk_size, n)
+        xyz = radec_to_unitvec(ra, dec)
+        tree = cKDTree(xyz, leafsize=64)
 
-            ra_list = ra[start:end].tolist()
-            dec_list = dec[start:end].tolist()
+        for prow in self.polygon_catalog:
+            ra_vertices = [v % 360.0 for v in prow.ra_vertices]
+            dec_vertices = prow.dec_vertices
+            poly = regionx_polygon(ra_vertices, dec_vertices)
 
-            chunk_mask = np.zeros(end - start, dtype=bool)
-            for prow in self.polygon_catalog:
-                poly = regionx_polygon([v % 360.0 for v in prow.ra_vertices], prow.dec_vertices)
-                chunk_mask |= np.asarray(poly.check_points(ra_list, dec_list), dtype=bool)
-                if chunk_mask.all():
-                    break
+            first_xyz, radius = polygon_ball_radius_chord(ra_vertices, dec_vertices)
+            idx = tree.query_ball_point(first_xyz, r=radius)
+            if not idx:
+                continue
 
-            out[start:end] = chunk_mask
+            idx_arr = np.asarray(idx, dtype=np.int64)
+            ra_list = ra[idx_arr].tolist()
+            dec_list = dec[idx_arr].tolist()
+            inside = np.asarray(poly.check_points(ra_list, dec_list), dtype=bool)
+            if inside.any():
+                out[idx_arr[inside]] = True
+            if out.all():
+                break
 
         self.region_randoms[region]["polygon_mask"] = out
 
