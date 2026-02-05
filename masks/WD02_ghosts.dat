@@ -1,7 +1,3 @@
-# Region: WD02
-# circle list: RA(deg) Dec(deg) radius(deg)
-circle 0 1
-unit d
 36.132000 -3.069000 3.390000
 36.209000 -3.946000 2.400000
 36.274000 -3.188000 3.390000
