@@ -318,6 +318,9 @@ class WDHexRandoms:
         """Loads star + ghost masks, and optional polygon mask file (default: none)."""
         self.star_mask_catalog = self._load_aperture_mask_csv(self.starmask_path)
         self.ghostmask_catalog = self._load_aperture_mask_csv(self.ghostmask_path)
+        
+        for row in self.ghostmask_catalog:
+            row.radius_deg /= 60.0
 
         if self.polygonmask_path is None:
             self.polygon_catalog = []
