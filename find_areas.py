@@ -167,11 +167,16 @@ class AreaFinder:
         - area masked in starmask or polygonmask
         - area masked in starmask or ghostmask or polygonmask
         This is done by getting the total area in sq deg and multiplying by the fractions found in find_area_fractions_realisationwise.
-        Also print out errors, assuming possible binomial errors on the fractions.
+        Also print out errors, assuming a Poisson approximation for masked counts.
 
         """
         if self.total_count is None or self.total_count == 0:
             raise RuntimeError("Counts not initialized. Run find_area_fractions_realisationwise() first.")
+        print("total count ", self.total_count)
+        print("starmask count ", self.starmask_count)
+        print("starghost count ", self.starmask_ghostmask_count)
+        print("starmask polygon count ", self.starmask_polygonmask_count)
+        print("star-poly-ghost count ", self.starmask_ghostmask_polygonmask_count)
 
         fractions = {
             "starmask": self.starmask_count / self.total_count,
@@ -180,8 +185,16 @@ class AreaFinder:
             "starmask+ghostmask+polygonmask": self.starmask_ghostmask_polygonmask_count / self.total_count,
         }
 
+        masked_counts = {
+            "starmask": self.starmask_count,
+            "starmask+ghostmask": self.starmask_ghostmask_count,
+            "starmask+polygonmask": self.starmask_polygonmask_count,
+            "starmask+ghostmask+polygonmask": self.starmask_ghostmask_polygonmask_count,
+        }
+
         errors = {
-            key: np.sqrt(frac * (1.0 - frac) / self.total_count) for key, frac in fractions.items()
+            key: (count ** 0.5 / self.total_count) if count > 0 else np.nan
+            for key, count in masked_counts.items()
         }
 
         regions = {}
