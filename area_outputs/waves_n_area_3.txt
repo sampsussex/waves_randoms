@@ -1,0 +1,31 @@
+Processing realisation: 0
+Processing realisation: 1
+Processing realisation: 2
+Processing realisation: 3
+Processing realisation: 4
+Processing realisation: 5
+Processing realisation: 6
+Processing realisation: 7
+Processing realisation: 8
+Processing realisation: 9
+Processing realisation: 10
+Processing realisation: 11
+Processing realisation: 12
+Processing realisation: 13
+Processing realisation: 14
+Processing realisation: 15
+Processing realisation: 16
+Processing realisation: 17
+Processing realisation: 18
+Processing realisation: 19
+Total count across all realisations: 200000000
+total count  200000000
+starmask count  8506223
+starghost count  13137670
+starmask polygon count  8553341
+star-poly-ghost count  13183948
+Region waves-wide_n: total area = 534.801132 sq deg
+  starmask: 22.745688 sq deg (fraction=4.253112e-02 ± 1.458271e-05, area_err=0.007799)
+  starmask+ghostmask: 35.130204 sq deg (fraction=6.568835e-02 ± 1.812296e-05, area_err=0.009692)
+  starmask+polygonmask: 22.871682 sq deg (fraction=4.276671e-02 ± 1.462305e-05, area_err=0.007820)
+  starmask+ghostmask+polygonmask: 35.253952 sq deg (fraction=6.591974e-02 ± 1.815485e-05, area_err=0.009709)
