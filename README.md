@@ -1,82 +1,67 @@
 # WAVES Random Catalog Generator
 
-This repository contains scripts for generating random catalogs for WAVES survey regions. There are two entry points:
+This repository now uses a single entry point:
 
-- **`make_waves_wide_randoms.py`**: generate randoms for the WAVES-wide North/South regions and the WAVES-deep region.
-- **`make_waves_ddf_randoms.py`**: generate randoms for WAVES Deep Field (WD) hex regions.
-
-Both scripts can optionally apply aperture- and polygon-based masks and write results to chunked Parquet files.
+- **`make_waves_randoms.py`**: generate randoms for WAVES-wide (`waves-wide_n`, `waves-wide_s`), WAVES-deep (`waves-deep`), and WD hex regions (`WD01`, `WD02`, `WD03`, `WD10`).
 
 ## Requirements
 
 - Python 3.8+
-- Python packages: `numpy`, `scipy`, `pyarrow`, `regionx`, `tqdm`
+- Python packages: `numpy`, `scipy`, `pyarrow`, `regionx`
 
 Install dependencies (example):
 
 ```bash
-pip install numpy scipy pyarrow regionx tqdm
+pip install numpy scipy pyarrow regionx
 ```
 
 ## Input Data
 
-Mask files live in the `masks/` directory by default. Each script has CLI flags to override mask paths or to skip masks entirely.
+Mask files live in the `masks/` directory by default.
 
-- **Aperture masks**: whitespace-delimited files with `ra dec radius_deg` per line (comments allowed with `#`).
-- **Polygon masks**: whitespace-delimited polygon vertices, as expected by `regionx`.
+- **Aperture masks**: whitespace-delimited files with `ra dec radius` per line (comments allowed with `#`).
+- **Polygon masks**: whitespace-delimited polygon vertices (`ra1 dec1 ra2 dec2 ...`).
+
+Default mask files are now selected automatically from `masks/` based on `--region`:
+
+- `waves-wide_n`: `starmask_waves_n.dat`, `ghostmask_waves_n.dat`, `ngc_n.dat`
+- `waves-wide_s`: `starmask_waves_s.dat`, `ghostmask_waves_s.dat`, `ngc_s.dat`, `extra_waves_s_sources.dat`
+- `waves-deep`: `starmask_waves_s.dat`, `ghostmask_waves_s.dat`, `ngc_s.dat`, `extra_waves_s_sources.dat`
+- `WD01/WD02/WD03/WD10`: `WDxx_stars.dat`, `WDxx_ghosts.dat` (no default polygon/extra mask)
+
+> Note: NGC files are used as polygon masks.
 
 ## Usage
 
-### WAVES-wide randoms
-
-Generate a WAVES-wide North catalog with 1 million points and default masks:
+### WAVES-wide / WAVES-deep
 
 ```bash
-python make_waves_wide_randoms.py \
+python make_waves_randoms.py \
   --region waves-wide_n \
   --nrandoms 1000000 \
   --save-location ./waves_randoms/
 ```
 
-Skip masks entirely:
+### WD hex region
 
 ```bash
-python make_waves_wide_randoms.py \
-  --region waves-wide_s \
-  --nrandoms 500000 \
-  --no-masks
-```
-
-### WAVES Deep Field (WD) hex randoms
-
-Generate WD01 randoms with polygon acceptance and masks:
-
-```bash
-python make_waves_ddf_randoms.py \
+python make_waves_randoms.py \
   --region WD01 \
   --nrandoms 1000000 \
   --save-location ./wd_randoms/
 ```
 
-Run without masks:
+Skip masks entirely:
 
 ```bash
-python make_waves_ddf_randoms.py \
-  --region WD03 \
-  --nrandoms 500000 \
-  --no-masks
+python make_waves_randoms.py --region waves-wide_s --no-masks
 ```
 
 ## Outputs
 
-Both scripts write chunked Parquet files to the `--save-location` directory. Output tables include:
+The script writes chunked Parquet files to `--save-location` and includes:
 
-- `ra`, `dec`: sky coordinates in degrees.
-- `starmask`, `ghostmask`, `polygon_mask`: boolean mask flags.
-- `realisation`: integer flag for block realisations.
-
-## Notes
-
-- Right Ascension (RA) values are normalized to `[0, 360)` degrees.
-- Declination (Dec) randoms are sampled uniformly in area.
-- For large runs, adjust `--chunk-size` to manage memory usage.
+- `ra`, `dec`
+- `in_region`
+- `starmask`, `ghostmask`, `polygon_mask`
+- `realisation`
