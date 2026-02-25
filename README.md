@@ -57,6 +57,17 @@ Skip masks entirely:
 python make_waves_randoms.py --region waves-wide_s --no-masks
 ```
 
+Use an input parquet catalog instead of generating random coordinates (defaults to `RAmax`/`Decmax`):
+
+```bash
+python make_waves_randoms.py \
+  --region waves-wide_n \
+  --input-catalog-parquet ./input_catalog.parquet \
+  --input-ra-column RAmax \
+  --input-dec-column Decmax \
+  --save-location ./waves_randoms/
+```
+
 ## Outputs
 
 The script writes chunked Parquet files to `--save-location` and includes:
