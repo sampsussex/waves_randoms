@@ -40,6 +40,15 @@ def sample_dec_equal_area(rng: np.random.Generator, decmin: float, decmax: float
     return np.rad2deg(np.arcsin(rng.uniform(smin, smax, size=n)))
 
 
+def in_ra_range_wrapped(ra_deg: np.ndarray, ramin: float, ramax: float) -> np.ndarray:
+    ra_n = normalize_ra(np.asarray(ra_deg, dtype=np.float64))
+    ramin_n = float(ramin) % 360.0
+    ramax_n = float(ramax) % 360.0
+    if ramin_n < ramax_n:
+        return (ra_n >= ramin_n) & (ra_n <= ramax_n)
+    return (ra_n >= ramin_n) | (ra_n <= ramax_n)
+
+
 def radec_to_unitvec(ra_deg: np.ndarray, dec_deg: np.ndarray) -> np.ndarray:
     ra = np.deg2rad(ra_deg)
     dec = np.deg2rad(dec_deg)
@@ -161,6 +170,41 @@ class WavesRandomGenerator:
             region: {"ra": None, "dec": None, "in_region": None, "starmask": None, "ghostmask": None, "polygon_mask": None, "realisation": None}
             for region in self.regions
         }
+
+    def set_points_from_catalog(self, region: str, ra: np.ndarray, dec: np.ndarray) -> None:
+        cfg = self.regions[region]
+        ra = normalize_ra(np.asarray(ra, dtype=np.float64))
+        dec = np.asarray(dec, dtype=np.float64)
+        if ra.shape != dec.shape:
+            raise ValueError(f"RA/Dec arrays must be the same shape: {ra.shape} vs {dec.shape}")
+
+        if cfg.mode == "box":
+            lim = cfg.limits
+            in_region = in_ra_range_wrapped(ra, lim["ramin"], lim["ramax"]) & (dec >= lim["decmin"]) & (dec <= lim["decmax"])
+        else:
+            poly = regionx_polygon([v % 360.0 for v in cfg.polygon_vertices.ra_vertices], cfg.polygon_vertices.dec_vertices)
+            in_region = np.asarray(poly.check_points(ra.tolist(), dec.tolist()), dtype=bool)
+
+        n = ra.size
+        self.region_randoms[region].update(
+            {
+                "ra": ra,
+                "dec": dec,
+                "in_region": in_region,
+                "starmask": np.zeros(n, dtype=bool),
+                "ghostmask": np.zeros(n, dtype=bool),
+                "polygon_mask": np.zeros(n, dtype=bool),
+                "realisation": np.zeros(n, dtype=np.int32),
+            }
+        )
+
+    def load_parquet_radec(self, path: str, ra_column: str, dec_column: str) -> Tuple[np.ndarray, np.ndarray]:
+        table = pq.read_table(path, columns=[ra_column, dec_column])
+        if ra_column not in table.column_names or dec_column not in table.column_names:
+            raise KeyError(f"Parquet file missing requested columns: {ra_column}, {dec_column}")
+        ra = table[ra_column].to_numpy(zero_copy_only=False)
+        dec = table[dec_column].to_numpy(zero_copy_only=False)
+        return np.asarray(ra, dtype=np.float64), np.asarray(dec, dtype=np.float64)
 
     def _load_aperture_mask_csv(self, path: str, radius_scale: float = 1.0) -> List[ApertureMaskRow]:
         rows: List[ApertureMaskRow] = []
@@ -368,6 +412,9 @@ def main() -> None:
     parser.add_argument("--no-ghost", action="store_true")
     parser.add_argument("--no-polygon", action="store_true")
     parser.add_argument("--block-size", type=int, default=10_000_000)
+    parser.add_argument("--input-catalog-parquet", type=str, default=None)
+    parser.add_argument("--input-ra-column", type=str, default="RAmax")
+    parser.add_argument("--input-dec-column", type=str, default="Decmax")
 
     args = parser.parse_args()
 
@@ -390,8 +437,14 @@ def main() -> None:
         if extra_path:
             extra_catalog = gen._load_aperture_mask_csv(extra_path)
 
-    print(f"[{region}] generating {args.nrandoms} randoms")
-    gen.generate_randoms(region)
+    if args.input_catalog_parquet:
+        print(f"[{region}] loading input parquet -> {args.input_catalog_parquet}")
+        input_ra, input_dec = gen.load_parquet_radec(args.input_catalog_parquet, args.input_ra_column, args.input_dec_column)
+        print(f"[{region}] applying masks to {input_ra.size} input rows")
+        gen.set_points_from_catalog(region, input_ra, input_dec)
+    else:
+        print(f"[{region}] generating {args.nrandoms} randoms")
+        gen.generate_randoms(region)
     gen.add_realisation_flag(region, args.block_size)
 
     if not args.no_masks:
