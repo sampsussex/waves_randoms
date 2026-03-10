@@ -107,6 +107,8 @@ class RegionConfig:
 
 class WavesRandomGenerator:
     def __init__(self, seed: int, nrandoms: int, chunk_size: int, save_location: str):
+        self._module_dir = os.path.dirname(os.path.abspath(__file__))
+        self._masks_dir = os.path.join(self._module_dir, "masks")
         self.rng = np.random.default_rng(seed)
         self.nrandoms = int(nrandoms)
         self.chunk_size = int(chunk_size)
@@ -137,33 +139,33 @@ class WavesRandomGenerator:
                 mode="box",
                 limits={"ramax": 225.0, "decmax": 3.95, "ramin": 157.25, "decmin": -3.95},
                 polygon_vertices=None,
-                default_star="./masks/starmask_waves_n.dat",
-                default_ghost="./masks/ghostmask_waves_n.dat",
-                default_polygon="./masks/ngc_n.dat",
+                default_star="starmask_waves_n.dat",
+                default_ghost="ghostmask_waves_n.dat",
+                default_polygon="ngc_n.dat",
                 default_extra=None,
             ),
             "waves-wide_s": RegionConfig(
                 mode="box",
                 limits={"ramax": 51.6, "decmax": -27.0, "ramin": -30.0, "decmin": -35.6},
                 polygon_vertices=None,
-                default_star="./masks/starmask_waves_s.dat",
-                default_ghost="./masks/ghostmask_waves_s.dat",
-                default_polygon="./masks/ngc_s.dat",
-                default_extra="./masks/extra_waves_s_sources.dat",
+                default_star="starmask_waves_s.dat",
+                default_ghost="ghostmask_waves_s.dat",
+                default_polygon="ngc_s.dat",
+                default_extra="extra_waves_s_sources.dat",
             ),
             "waves-deep": RegionConfig(
                 mode="box",
                 limits={"ramax": 351.0, "decmax": -30.0, "ramin": 339.0, "decmin": -35.0},
                 polygon_vertices=None,
-                default_star="./masks/starmask_waves_s.dat",
-                default_ghost="./masks/ghostmask_waves_s.dat",
-                default_polygon="./masks/ngc_s.dat",
-                default_extra="./masks/extra_waves_s_sources.dat",
+                default_star="starmask_waves_s.dat",
+                default_ghost="ghostmask_waves_s.dat",
+                default_polygon="ngc_s.dat",
+                default_extra="extra_waves_s_sources.dat",
             ),
-            "WD01": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD01"].ra_vertices, wd_polygons["WD01"].dec_vertices), wd_polygons["WD01"], "./masks/WD01_stars.dat", "./masks/WD01_ghosts.dat", None, None, 1.0 / 60.0),
-            "WD02": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD02"].ra_vertices, wd_polygons["WD02"].dec_vertices), wd_polygons["WD02"], "./masks/WD02_stars.dat", "./masks/WD02_ghosts.dat", None, None, 1.0 / 60.0),
-            "WD03": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD03"].ra_vertices, wd_polygons["WD03"].dec_vertices), wd_polygons["WD03"], "./masks/WD03_stars.dat", "./masks/WD03_ghosts.dat", None, None, 1.0 / 60.0),
-            "WD10": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD10"].ra_vertices, wd_polygons["WD10"].dec_vertices), wd_polygons["WD10"], "./masks/WD10_stars.dat", "./masks/WD10_ghosts.dat", None, None, 1.0 / 60.0),
+            "WD01": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD01"].ra_vertices, wd_polygons["WD01"].dec_vertices), wd_polygons["WD01"], "WD01_stars.dat", "WD01_ghosts.dat", None, None, 1.0 / 60.0),
+            "WD02": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD02"].ra_vertices, wd_polygons["WD02"].dec_vertices), wd_polygons["WD02"], "WD02_stars.dat", "WD02_ghosts.dat", None, None, 1.0 / 60.0),
+            "WD03": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD03"].ra_vertices, wd_polygons["WD03"].dec_vertices), wd_polygons["WD03"], "WD03_stars.dat", "WD03_ghosts.dat", None, None, 1.0 / 60.0),
+            "WD10": RegionConfig("hex", hex_vertices_to_limits(wd_polygons["WD10"].ra_vertices, wd_polygons["WD10"].dec_vertices), wd_polygons["WD10"], "WD10_stars.dat", "WD10_ghosts.dat", None, None, 1.0 / 60.0),
         }
 
         self.region_randoms = {
@@ -255,15 +257,42 @@ class WavesRandomGenerator:
             raise RuntimeError(f"Loaded 0 polygons from {path}")
         return polys
 
+    def _resolve_mask_path(self, user_path: Optional[str], default_name: Optional[str]) -> Optional[str]:
+        if user_path:
+            return user_path
+        if default_name is None:
+            return None
+        return os.path.join(self._masks_dir, default_name)
+
     def _resolve_mask_paths(self, region: str, args: argparse.Namespace) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], float]:
         cfg = self.regions[region]
         return (
-            args.starmask_path or cfg.default_star,
-            args.ghostmask_path or cfg.default_ghost,
-            args.polygonmask_path if args.polygonmask_path is not None else cfg.default_polygon,
-            args.extra_waves_s_masks if args.extra_waves_s_masks is not None else cfg.default_extra,
+            self._resolve_mask_path(args.starmask_path, cfg.default_star),
+            self._resolve_mask_path(args.ghostmask_path, cfg.default_ghost),
+            self._resolve_mask_path(args.polygonmask_path, cfg.default_polygon),
+            self._resolve_mask_path(args.extra_waves_s_masks, cfg.default_extra),
             cfg.ghost_radius_scale,
         )
+
+    def load_region_masks(self, region: str, args: argparse.Namespace) -> Tuple[List[ApertureMaskRow], List[ApertureMaskRow], List[PolygonMaskRow], List[ApertureMaskRow]]:
+        star_path, ghost_path, polygon_path, extra_path, ghost_scale = self._resolve_mask_paths(region, args)
+
+        star_catalog: List[ApertureMaskRow] = []
+        ghost_catalog: List[ApertureMaskRow] = []
+        polygon_catalog: List[PolygonMaskRow] = []
+        extra_catalog: List[ApertureMaskRow] = []
+
+        if not args.no_masks:
+            if star_path:
+                star_catalog = self._load_aperture_mask_csv(star_path)
+            if ghost_path:
+                ghost_catalog = self._load_aperture_mask_csv(ghost_path, radius_scale=ghost_scale)
+            if polygon_path:
+                polygon_catalog = self._load_polygon_mask_csv(polygon_path)
+            if extra_path:
+                extra_catalog = self._load_aperture_mask_csv(extra_path)
+
+        return star_catalog, ghost_catalog, polygon_catalog, extra_catalog
 
     def generate_randoms(self, region: str, nrandoms: Optional[int] = None) -> None:
         cfg = self.regions[region]
@@ -420,22 +449,7 @@ def main() -> None:
 
     gen = WavesRandomGenerator(args.seed, args.nrandoms, args.chunk_size, args.save_location)
     region = args.region
-    star_path, ghost_path, polygon_path, extra_path, ghost_scale = gen._resolve_mask_paths(region, args)
-
-    star_catalog: List[ApertureMaskRow] = []
-    ghost_catalog: List[ApertureMaskRow] = []
-    polygon_catalog: List[PolygonMaskRow] = []
-    extra_catalog: List[ApertureMaskRow] = []
-
-    if not args.no_masks:
-        if star_path:
-            star_catalog = gen._load_aperture_mask_csv(star_path)
-        if ghost_path:
-            ghost_catalog = gen._load_aperture_mask_csv(ghost_path, radius_scale=ghost_scale)
-        if polygon_path:
-            polygon_catalog = gen._load_polygon_mask_csv(polygon_path)
-        if extra_path:
-            extra_catalog = gen._load_aperture_mask_csv(extra_path)
+    star_catalog, ghost_catalog, polygon_catalog, extra_catalog = gen.load_region_masks(region, args)
 
     if args.input_catalog_parquet:
         print(f"[{region}] loading input parquet -> {args.input_catalog_parquet}")
