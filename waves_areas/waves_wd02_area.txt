@@ -8,14 +8,24 @@ Processing realisation: 6
 Processing realisation: 7
 Processing realisation: 8
 Processing realisation: 9
-Total count across all realisations: 100000000
-total count  100000000
-starmask count  3369671
-starghost count  3628012
-starmask polygon count  3369671
-star-poly-ghost count  3628012
+Processing realisation: 10
+Processing realisation: 11
+Processing realisation: 12
+Processing realisation: 13
+Processing realisation: 14
+Processing realisation: 15
+Processing realisation: 16
+Processing realisation: 17
+Processing realisation: 18
+Processing realisation: 19
+Total count across all realisations: 200000000
+total count  200000000
+starmask count  8729902
+starghost count  9098965
+starmask polygon count  8729902
+star-poly-ghost count  9098965
 Region WD02: total area = 4.169083 sq deg
-  starmask: 0.140484 sq deg (fraction=3.369671e-02 ± 1.835666e-05, area_err=0.000077)
-  starmask+ghostmask: 0.151255 sq deg (fraction=3.628012e-02 ± 1.904734e-05, area_err=0.000079)
-  starmask+polygonmask: 0.140484 sq deg (fraction=3.369671e-02 ± 1.835666e-05, area_err=0.000077)
-  starmask+ghostmask+polygonmask: 0.151255 sq deg (fraction=3.628012e-02 ± 1.904734e-05, area_err=0.000079)
+  starmask: 0.181978 sq deg (fraction=4.364951e-02 ± 1.477320e-05, area_err=0.000062)
+  starmask+ghostmask: 0.189672 sq deg (fraction=4.549483e-02 ± 1.508225e-05, area_err=0.000063)
+  starmask+polygonmask: 0.181978 sq deg (fraction=4.364951e-02 ± 1.477320e-05, area_err=0.000062)
+  starmask+ghostmask+polygonmask: 0.189672 sq deg (fraction=4.549483e-02 ± 1.508225e-05, area_err=0.000063)
