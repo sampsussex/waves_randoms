@@ -105,6 +105,34 @@ class RegionConfig:
     ghost_radius_scale: float = 1.0
 
 
+class PlanarPolygon:
+    """Drop-in replacement for regionx_polygon that does flat-plane
+    point-in-polygon testing on raw RA/Dec values (no great-circle correction).
+    Matches interface: check_points(ra_list, dec_list) -> list[bool]"""
+
+    def __init__(self, ra_vertices, dec_vertices):
+        self.rx = np.asarray(ra_vertices, dtype=np.float64)
+        self.ry = np.asarray(dec_vertices, dtype=np.float64)
+
+    def check_points(self, ra_list, dec_list):
+        x = np.asarray(ra_list, dtype=np.float64)
+        y = np.asarray(dec_list, dtype=np.float64)
+        n = len(self.rx)
+        inside = np.zeros(x.shape, dtype=bool)
+
+        j = n - 1
+        for i in range(n):
+            xi, yi = self.rx[i], self.ry[i]
+            xj, yj = self.rx[j], self.ry[j]
+            # standard ray-casting edge test, vectorized over all query points
+            cond = ((yi > y) != (yj > y)) & (
+                x < (xj - xi) * (y - yi) / (yj - yi + 1e-300) + xi
+            )
+            inside ^= cond
+            j = i
+        return inside.tolist()
+
+
 class WavesRandomGenerator:
     def __init__(self, seed: int, nrandoms: int, chunk_size: int, save_location: str):
         self._module_dir = os.path.dirname(os.path.abspath(__file__))
@@ -184,7 +212,7 @@ class WavesRandomGenerator:
             lim = cfg.limits
             in_region = in_ra_range_wrapped(ra, lim["ramin"], lim["ramax"]) & (dec >= lim["decmin"]) & (dec <= lim["decmax"])
         else:
-            poly = regionx_polygon([v % 360.0 for v in cfg.polygon_vertices.ra_vertices], cfg.polygon_vertices.dec_vertices)
+            poly = PlanarPolygon([v % 360.0 for v in cfg.polygon_vertices.ra_vertices], cfg.polygon_vertices.dec_vertices)
             in_region = np.asarray(poly.check_points(ra.tolist(), dec.tolist()), dtype=bool)
 
         n = ra.size
@@ -304,7 +332,7 @@ class WavesRandomGenerator:
             dec = sample_dec_equal_area(self.rng, lim["decmin"], lim["decmax"], n)
             in_region = np.ones(n, dtype=bool)
         else:
-            poly = regionx_polygon([v % 360.0 for v in cfg.polygon_vertices.ra_vertices], cfg.polygon_vertices.dec_vertices)
+            poly = PlanarPolygon([v % 360.0 for v in cfg.polygon_vertices.ra_vertices], cfg.polygon_vertices.dec_vertices)
             ra = np.empty(n, dtype=np.float64)
             dec = np.empty(n, dtype=np.float64)
             filled = 0
