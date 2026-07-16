@@ -84,7 +84,7 @@ class AreaFinder:
         return area_sr * (180.0 / np.pi) ** 2
 
     def find_area_hexagon_on_sky(self, ra_vertices: List[float], dec_vertices: List[float]) -> float:
-        "Find the (planar) area of a hexagon given by ra/dec vertices in sq deg"
+        "Find the area of a hexagon in raw RA/Dec plane (matches profoundInPoly's flat-plane test), in sq deg"
         if len(ra_vertices) != len(dec_vertices):
             raise ValueError("RA/Dec vertex lists must be the same length.")
         if len(ra_vertices) < 3:
@@ -100,7 +100,7 @@ class AreaFinder:
         for idx in range(len(x) - 1):
             total += x[idx] * y[idx + 1] - x[idx + 1] * y[idx]
 
-        return abs(total) / 2.0  # already in sq deg, no rad->deg conversion needed
+        return abs(total) / 2.0
 
     def find_area_fractions_realisationwise(self):
         # Read in realisation column from parquet file
