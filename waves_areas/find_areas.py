@@ -84,23 +84,36 @@ class AreaFinder:
         return area_sr * (180.0 / np.pi) ** 2
 
     def find_area_hexagon_on_sky(self, ra_vertices: List[float], dec_vertices: List[float]) -> float:
-        "Find the area of a hexagon in raw RA/Dec plane (matches profoundInPoly's flat-plane test), in sq deg"
+        """
+        Exact physical (solid-angle) area, in sq deg, of a polygon whose edges are
+        straight lines in raw (RA, Dec) coordinate space -- i.e. matching the
+        boundary that profoundInPoly (flat point-in-polygon test) actually encloses,
+        NOT great-circle edges. Assumes no RA wraparound across vertices.
+        """
         if len(ra_vertices) != len(dec_vertices):
             raise ValueError("RA/Dec vertex lists must be the same length.")
         if len(ra_vertices) < 3:
             raise ValueError("Need at least 3 vertices to define a polygon.")
 
-        x = np.array(ra_vertices, dtype=float)
-        y = np.array(dec_vertices, dtype=float)
-        if x[0] != x[-1] or y[0] != y[-1]:
-            x = np.append(x, x[0])
-            y = np.append(y, y[0])
+        lons = np.deg2rad(np.array(ra_vertices, dtype=float))
+        lats = np.deg2rad(np.array(dec_vertices, dtype=float))
+        if lons[0] != lons[-1] or lats[0] != lats[-1]:
+            lons = np.append(lons, lons[0])
+            lats = np.append(lats, lats[0])
 
         total = 0.0
-        for idx in range(len(x) - 1):
-            total += x[idx] * y[idx + 1] - x[idx + 1] * y[idx]
+        for idx in range(len(lons) - 1):
+            lon1, lon2 = lons[idx], lons[idx + 1]
+            lat1, lat2 = lats[idx], lats[idx + 1]
+            dlon = lon2 - lon1  # literal difference, no shortest-path wrapping
+            if abs(lat2 - lat1) < 1e-12:
+                contrib = dlon * np.sin(lat1)
+            else:
+                contrib = dlon * (np.cos(lat1) - np.cos(lat2)) / (lat2 - lat1)
+            total += contrib
 
-        return abs(total) / 2.0
+        area_sr = abs(total)
+        return area_sr * (180.0 / np.pi) ** 2
 
     def find_area_fractions_realisationwise(self):
         # Read in realisation column from parquet file
